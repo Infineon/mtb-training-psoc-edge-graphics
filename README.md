@@ -20,9 +20,9 @@ measurable FPS improvements in real-time UI applications.
 
 ## Prerequisites
 ### Recommended trainings
-- This training does not cover the basic concepts of ModusToolbox™ and PSOC™ Edge.
-  - For an introduction to PSOC™ MCUs, including getting started guides to ModusToolbox™, go to the [PSOC™ Developer Journey](https://www.infineon.com/PSOCdeveloper).
-  - For PSOC™ Edge trainings, from beginner tutorials to advanced sessions, visit the [PSOC™ Edge E84 Training Collection](https://infineon-academy.csod.com/ui/lms-learner-playlist/PlaylistDetails?playlistId=8f04565f-88f4-4ca7-83b3-22e501656fbd).
+- This training does not cover foundational concepts of ModusToolbox™ and PSOC™ Edge.
+- For an introduction to PSOC™ MCUs, including getting-started guides for ModusToolbox™, see the [PSOC™ Developer Journey](https://www.infineon.com/PSOCdeveloper).
+- For PSOC™ Edge trainings, from beginner tutorials to advanced sessions, visit the [PSOC™ Edge E84 Training Collection](https://infineon-academy.csod.com/ui/lms-learner-playlist/PlaylistDetails?playlistId=8f04565f-88f4-4ca7-83b3-22e501656fbd).
 
 ### Tools (see [training manual](#content) for versions and installation instructions)
 - [ModusToolbox™ with Eclipse IDE](https://softwaretools.infineon.com/tools/com.ifx.tb.tool.modustoolboxsetup)
@@ -44,10 +44,10 @@ measurable FPS improvements in real-time UI applications.
 5. Graphics performance and power
 6. Lab 4: FPS profiling and GPU acceleration
 
-## Expected Outcome
-- Understand the end-to-end graphics workflow on PSOC™ Edge, from assets to display output
-- Gain hands-on experience with RLAD-based image optimization and LVGL-based GUI integration
-- Learn practical techniques to benchmark and improve UI performance using GPU acceleration
+## Expected Outcomes
+- Understand the end-to-end graphics workflow on PSOC™ Edge, from assets to display output.
+- Gain hands-on experience with RLAD-based image optimization and LVGL-based GUI integration.
+- Learn practical techniques to benchmark and improve UI performance using GPU acceleration.
 
 ## Content
 - Training video at Infineon Academy (coming soon)
@@ -56,14 +56,14 @@ measurable FPS improvements in real-time UI applications.
 - [Lab solutions](./Lab_Source/)
 
 ## References and resources
-
 - [PSOC™ Edge MCUs](https://www.infineon.com/products/microcontroller/32-bit-psoc-arm-cortex/32-bit-psoc-edge-arm)
 - [Infineon Edge Protect](https://www.infineon.com/promo/edge-protect)
 - [Introduction to PSOC™ MCUs and ModusToolbox™](https://www.infineon.com/PSOCdeveloper)
-- [PSOC™ Edge E84 training collection](https://infineon-academy.csod.com/samldefault.aspx?ouid=1&returnURL=%252fDeepLink%252fProcessRedirect.aspx%253fmodule%253dphnxdriver%2526routename%253dAdmin%252fPlayerPageRedirectHandler%2526Route%253d%25252flms-learner-playlist%25252fPlaylistDetails%2526Parameters%253dplaylistId%25253d8f04565f-88f4-4ca7-83b3-22e501656fbd)
+- [PSOC™ Edge E84 training collection](https://infineon-academy.csod.com/ui/lms-learner-playlist/PlaylistDetails?playlistId=8f04565f-88f4-4ca7-83b3-22e501656fbd)
 
 ## History
 
 | Date | Version | Description |
 | ---- | ------- | ----------- |
+| 07/28/2026 | *A | Updated lab instructions and presentation speaker notes. |
 | 05/04/2026 | ** | First public release |

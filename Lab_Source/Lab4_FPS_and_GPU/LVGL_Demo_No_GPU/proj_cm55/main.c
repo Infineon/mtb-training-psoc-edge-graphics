@@ -7,29 +7,33 @@
 * Related Document : See README.md
 *
 ********************************************************************************
-* (c) 2025-2025, Infineon Technologies AG, or an affiliate of Infineon Technologies AG. All rights reserved.
-* This software, associated documentation and materials ("Software") is owned by
-* Infineon Technologies AG or one of its affiliates ("Infineon") and is protected
-* by and subject to worldwide patent protection, worldwide copyright laws, and
-* international treaty provisions. Therefore, you may use this Software only as
-* provided in the license agreement accompanying the software package from which
-* you obtained this Software. If no license agreement applies, then any use,
-* reproduction, modification, translation, or compilation of this Software is
-* prohibited without the express written permission of Infineon.
+* (c) 2025-2026, Infineon Technologies AG, or an affiliate of Infineon
+* Technologies AG. All rights reserved.
+* This software, associated documentation and materials ("Software") is
+* owned by Infineon Technologies AG or one of its affiliates ("Infineon")
+* and is protected by and subject to worldwide patent protection, worldwide
+* copyright laws, and international treaty provisions. Therefore, you may use
+* this Software only as provided in the license agreement accompanying the
+* software package from which you obtained this Software. If no license
+* agreement applies, then any use, reproduction, modification, translation, or
+* compilation of this Software is prohibited without the express written
+* permission of Infineon.
+*
 * Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
-* IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING,
-* BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF THIRD-PARTY RIGHTS AND
-* IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A SPECIFIC USE/PURPOSE OR
-* MERCHANTABILITY. Infineon reserves the right to make changes to the Software
-* without notice. You are responsible for properly designing, programming, and
-* testing the functionality and safety of your intended application of the
-* Software, as well as complying with any legal requirements related to its
-* use. Infineon does not guarantee that the Software will be free from intrusion,
-* data theft or loss, or other breaches ("Security Breaches"), and Infineon
-* shall have no liability arising out of any Security Breaches. Unless otherwise
-* explicitly approved by Infineon, the Software may not be used in any application
-* where a failure of the Product or any consequences of the use thereof can
-* reasonably be expected to result in personal injury.
+* IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+* INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
+* THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
+* SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
+* Infineon reserves the right to make changes to the Software without notice.
+* You are responsible for properly designing, programming, and testing the
+* functionality and safety of your intended application of the Software, as
+* well as complying with any legal requirements related to its use. Infineon
+* does not guarantee that the Software will be free from intrusion, data theft
+* or loss, or other breaches ("Security Breaches"), and Infineon shall have
+* no liability arising out of any Security Breaches. Unless otherwise
+* explicitly approved by Infineon, the Software may not be used in any
+* application where a failure of the Product or any consequences of the use
+* thereof can reasonably be expected to result in personal injury.
 *******************************************************************************/
 
 /*******************************************************************************
@@ -76,14 +80,8 @@
 /* 64 KB */
 #define DEFAULT_GPU_CMD_BUFFER_SIZE         ((64U) * (1024U))
 
-#if defined(MTB_DISPLAY_W4P3INCH_RPI)
-#define DISP_H                              (480U)
-#define DISP_W                              (832U)
-#else
-#define DISP_H                              (600U)
-#define DISP_W                              (1024U)
-#endif
-#define GPU_TESSELLATION_BUFFER_SIZE        ((DISP_H) * 128U)
+
+#define GPU_TESSELLATION_BUFFER_SIZE        ((MY_DISP_VER_RES) * 128U)
 
 #define VGLITE_HEAP_SIZE                    (((DEFAULT_GPU_CMD_BUFFER_SIZE) * \
                                               (APP_BUFFER_COUNT)) + \
@@ -103,6 +101,10 @@
 /* Define the LPTimer interrupt priority number. '1' implies highest priority.*/
 #define APP_LPTIMER_INTERRUPT_PRIORITY      (1U)
 
+#if LV_USE_DEMO_BENCHMARK
+#define BENCHMARK_DONE_CHECK_PERIOD_MS      (500U)
+#endif
+
 #if ( configGENERATE_RUN_TIME_STATS == 1 )
 #define TCPWM_TIMER_INT_PRIORITY            (1U)
 #endif
@@ -114,9 +116,9 @@
 /* Heap memory for VGLite to allocate memory for buffers, command, and
  * tessellation buffers
  */
-/* CY_SECTION(".cy_gpu_buf") uint8_t contiguous_mem[VGLITE_HEAP_SIZE] = { 0xFF };
+//CY_SECTION(".cy_gpu_buf") uint8_t contiguous_mem[VGLITE_HEAP_SIZE] = {0xFF};
 
-volatile void *vglite_heap_base = &contiguous_mem; */
+//volatile void *vglite_heap_base = &contiguous_mem;
 
 TaskHandle_t rtos_cm55_gfx_task_handle = NULL;
 
@@ -156,7 +158,7 @@ static mtb_hal_lptimer_t lptimer_obj;
 /* RTC HAL object */
 static mtb_hal_rtc_t rtc_obj;
 
-#if ( configGENERATE_RUN_TIME_STATS == 1 )
+#if (configGENERATE_RUN_TIME_STATS == 1)
 /*******************************************************************************
 * Function Name: setup_run_time_stats_timer
 ********************************************************************************
@@ -175,8 +177,8 @@ void setup_run_time_stats_timer(void)
 {
     /* Initialze TCPWM block with required timer configuration */
     if (CY_TCPWM_SUCCESS != Cy_TCPWM_Counter_Init(CYBSP_GENERAL_PURPOSE_TIMER_HW,
-        CYBSP_GENERAL_PURPOSE_TIMER_NUM,
-        &CYBSP_GENERAL_PURPOSE_TIMER_config))
+                                                CYBSP_GENERAL_PURPOSE_TIMER_NUM,
+                                           &CYBSP_GENERAL_PURPOSE_TIMER_config))
     {
         handle_app_error();
     }
@@ -228,7 +230,6 @@ uint32_t get_run_time_counter_value(void)
 *******************************************************************************/
 uint32_t calculate_idle_percentage(void)
 {
-
     static uint32_t previousIdleTime = 0;
     static TickType_t previousTick = 0;
     uint32_t time_diff = 0;
@@ -249,7 +250,7 @@ uint32_t calculate_idle_percentage(void)
 
     return idle_percent;
 }
-#endif
+#endif /* #if configGENERATE_RUN_TIME_STATS == 1 */
 
 /*******************************************************************************
 * Function Name: lptimer_interrupt_handler
@@ -411,8 +412,49 @@ static void gpu_irq_handler(void)
 *******************************************************************************/
 static void disp_touch_i2c_controller_interrupt(void)
 {
-    Cy_SCB_I2C_Interrupt(DISPLAY_I2C_CONTROLLER_HW, &disp_touch_i2c_controller_context);
+    Cy_SCB_I2C_Interrupt(DISPLAY_I2C_CONTROLLER_HW,
+                         &disp_touch_i2c_controller_context);
 }
+
+
+#if LV_USE_DEMO_BENCHMARK
+/*******************************************************************************
+* Function Name: check_benchmark_done_cb
+********************************************************************************
+* Summary:
+*  This timer callback polls for the completion of the LVGL benchmark.
+*
+*  Once all test cases finish, the benchmark demo replaces the screen content
+*  with a results table. When the table is detected as the first child of the
+*  active screen, the callback re-enables touch input (which was disabled
+*  during the benchmark to reduce CPU load) and deletes the one-shot timer.
+*
+*  Touch input is intentionally disabled while the benchmark is running
+*  because the hardware touch controller operates in polling mode, which
+*  would add unnecessary CPU overhead.
+*
+* Parameters:
+*  lv_timer_t *t: Pointer to the LVGL timer that triggered this callback
+*
+* Return:
+*  void
+*
+*******************************************************************************/
+static void check_benchmark_done_cb(lv_timer_t *t)
+{
+    lv_obj_t *scr = lv_screen_active();
+
+    /* The benchmark summary screen places a table as the first child of the
+     * active screen once all test cases have completed. */
+    if ((lv_obj_get_child_count(scr) > 0) &&
+        (lv_obj_check_type(lv_obj_get_child(scr, 0), &lv_table_class)))
+    {
+        /* Benchmark is done - re-enable touch so the user can scroll results */
+        lv_port_indev_init();
+        lv_timer_delete(t);
+    }
+}
+#endif
 
 
 /*******************************************************************************
@@ -423,8 +465,8 @@ static void disp_touch_i2c_controller_interrupt(void)
 *   It initializes:
 *       - GFX subsystem.
 *       - Configure the DC, GPU interrupts.
-*       - Initialize I2C interface to be used for touch as well as 7-inch display
-*         drivers.
+*       - Initialize I2C interface to be used for touch as well as 7, 4.3-inch 
+*         display drivers.
 *       - Initializes the display panel selected through Makefile component and
 *         vglite driver.
 *       - Allocates vglite memory.
@@ -466,19 +508,20 @@ static void cm55_gfx_task(void *arg)
     GFXSS_config.mipi_dsi_cfg = &mtb_disp_waveshare_4p3_dsi_config;
 #endif
 
+    GFXSS_config.dc_cfg->gfx_layer_config->width  = MY_DISP_HOR_RES;
+    GFXSS_config.dc_cfg->gfx_layer_config->height = MY_DISP_VER_RES;
+    GFXSS_config.dc_cfg->display_width            = MY_DISP_HOR_RES;
+    GFXSS_config.dc_cfg->display_height           = MY_DISP_VER_RES; 
+
     /* Set frame buffer address to the GFXSS configuration structure */
     GFXSS_config.dc_cfg->gfx_layer_config->buffer_address    = frame_buffer1;
     GFXSS_config.dc_cfg->gfx_layer_config->uv_buffer_address = frame_buffer1;
-
-    GFXSS_config.dc_cfg->gfx_layer_config->width  = DISP_W;
-    GFXSS_config.dc_cfg->gfx_layer_config->height = DISP_H;
 
     /* Initialize Graphics subsystem as per the configuration */
     gfx_status = Cy_GFXSS_Init(GFXSS, &GFXSS_config, &gfx_context);
 
     if (CY_GFX_SUCCESS == gfx_status)
     {
-
         /* Initialize GFXSS DC interrupt */
         sysint_status = Cy_SysInt_Init(&dc_irq_cfg, dc_irq_handler);
 
@@ -508,7 +551,8 @@ static void cm55_gfx_task(void *arg)
 
         /* Initialize the I2C in controller mode. */
         i2c_result = Cy_SCB_I2C_Init(DISPLAY_I2C_CONTROLLER_HW,
-                    &DISPLAY_I2C_CONTROLLER_config, &disp_touch_i2c_controller_context);
+                                     &DISPLAY_I2C_CONTROLLER_config,
+                                     &disp_touch_i2c_controller_context);
 
         if (CY_SCB_I2C_SUCCESS != i2c_result)
         {
@@ -544,6 +588,7 @@ static void cm55_gfx_task(void *arg)
             printf("Waveshare 7-Inch R-Pi display init failed with status = %u\r\n", (unsigned int) status);
             CY_ASSERT(0);
         }
+
 #elif defined(MTB_DISPLAY_EK79007AD3)
         /* Initialize the WF101JTYAHMNB0 display driver. */
         mipi_status = mtb_display_ek79007ad3_init(GFXSS_GFXSS_MIPIDSI,
@@ -554,10 +599,12 @@ static void cm55_gfx_task(void *arg)
             printf("WF101JTYAHMNB0 10-inch display init failed with status = %d\r\n", mipi_status);
             CY_ASSERT(0);
         }
+
 #elif defined(MTB_DISPLAY_W4P3INCH_RPI)
 
         i2c_result = Cy_SCB_I2C_Init(DISPLAY_I2C_CONTROLLER_HW,
-                    &DISPLAY_I2C_CONTROLLER_config, &disp_touch_i2c_controller_context);
+                                     &DISPLAY_I2C_CONTROLLER_config,
+                                     &disp_touch_i2c_controller_context);
 
         if (CY_SCB_I2C_SUCCESS != i2c_result)
         {
@@ -582,39 +629,52 @@ static void cm55_gfx_task(void *arg)
         Cy_SCB_I2C_Enable(DISPLAY_I2C_CONTROLLER_HW);
 
          /* Initialize the Waveshare 4.3-Inch display */
-        i2c_result = mtb_disp_waveshare_4p3_init(DISPLAY_I2C_CONTROLLER_HW, &disp_touch_i2c_controller_context);
+        i2c_result = mtb_disp_waveshare_4p3_init(DISPLAY_I2C_CONTROLLER_HW,
+                                             &disp_touch_i2c_controller_context);
         if (CY_SCB_I2C_SUCCESS != i2c_result)
         {
             printf("Waveshare 4.3-Inch display init failed with status = %u\r\n", (unsigned int) i2c_result);
             CY_ASSERT(0);
         }
-
 #endif
         /* Allocate memory for VGLite from the vglite_heap_base */
-       /*  vg_module_parameters_t vg_params;
-        vg_params.register_mem_base = (uint32_t)GFXSS_GFXSS_GPU_GCNANO;
-        vg_params.gpu_mem_base[VG_PARAMS_POS] = GPU_MEM_BASE;
-        vg_params.contiguous_mem_base[VG_PARAMS_POS] = vglite_heap_base;
-        vg_params.contiguous_mem_size[VG_PARAMS_POS] = VGLITE_HEAP_SIZE; */
+//        vg_module_parameters_t vparams;
+//        vg_params.register_mem_base = (uint32_t)GFXSS_GFXSS_GPU_GCNANO;
+//        vg_params.gpu_mem_base[VG_PARAMS_POS] = GPU_MEM_BASE;
+//        vg_params.contiguous_mem_base[VG_PARAMS_POS] = vglite_heap_base;
+//        vg_params.contiguous_mem_size[VG_PARAMS_POS] = VGLITE_HEAP_SIZE;
 
         /* Initialize VGlite memory. */
-        /* vg_lite_init_mem(&vg_params); */
+//        vg_lite_init_mem(&vg_params);
 
         /* Initialize the memory and data structures needed for VGLite draw/blit
          * functions
          */
-        /* vglite_status = vg_lite_init((MY_DISP_HOR_RES) / 4,
-                             (MY_DISP_VER_RES) / 4); */
+//        vglite_status = vg_lite_init((MY_DISP_HOR_RES),
+//                             (MY_DISP_VER_RES));
 
         if (VG_LITE_SUCCESS == vglite_status)
         {
             /* Initialize LVGL library */
             lv_init();
             lv_port_disp_init();
+
+#if LV_USE_DEMO_BENCHMARK
+            /* Run the Benchmark demo */
+            lv_demo_benchmark();
+
+            /* Poll for the benchmark summary table
+             * Once detected, touch input is re-enabled and
+             * this timer is deleted. */
+            lv_timer_create(check_benchmark_done_cb, BENCHMARK_DONE_CHECK_PERIOD_MS, NULL);
+#else
+            /* Initialize touch input. Skipped during benchmark to avoid the
+             * CPU overhead of polling-mode touch. */
             lv_port_indev_init();
 
             /* Run the Music demo */
             lv_demo_music();
+#endif
         }
         else
         {
@@ -663,6 +723,7 @@ static void setup_clib_support(void)
     /* Initialize the ModusToolbox CLIB support library */
     mtb_clib_support_init(&rtc_obj);
 }
+
 
 /*******************************************************************************
 * Function Name: main

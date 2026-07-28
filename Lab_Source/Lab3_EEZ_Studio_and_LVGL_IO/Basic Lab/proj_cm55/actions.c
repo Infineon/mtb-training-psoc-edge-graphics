@@ -8,10 +8,3 @@ void action_button1_pressed(lv_event_t * e)
    	Cy_GPIO_Inv(CYBSP_USER_LED1_PORT,CYBSP_USER_LED1_NUM);
 	
 }
-
-void action_action_button1_pressed(lv_event_t * e)
-{
-	(void)e;
-	
-}
-

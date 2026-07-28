@@ -24,7 +24,7 @@
  */
 int ui_set_bar_from_adc(int adc_raw, int adc_max)
 {
-    if(!objects.bar1) return 100;  // bar not created yet
+    if(!objects.my_bar) return 100;  // bar not created yet
     if(adc_max <= 0) return 100;   //ADC Max can not be negative
 
     if(adc_raw < 0) adc_raw = 0;
@@ -35,30 +35,8 @@ int ui_set_bar_from_adc(int adc_raw, int adc_max)
     if(percent > 100) percent = 100;
      
 
-    lv_bar_set_value(objects.bar1, percent, LV_ANIM_OFF);
+    lv_bar_set_value(objects.my_bar, percent, LV_ANIM_OFF);
     return percent;
 }
 
-#define TA_LOG_BUF_SIZE 256
 
-// Append formatted text + newline to the textarea
-void ui_textarea_printf(const char *fmt, ...)
-{
-    // CHANGE this to match your exact field name from screens.h:
-    lv_obj_t *ta = objects.text_area;
-    if(!ta) return;
-
-    char buf[TA_LOG_BUF_SIZE];
-
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-
-    lv_textarea_add_text(ta, buf);
-    lv_textarea_add_text(ta, "\n");
-
-    // Scroll to bottom (keeps latest lines visible)
-    lv_textarea_set_cursor_pos(ta, LV_TEXTAREA_CURSOR_LAST);
-    lv_obj_scroll_to_y(ta, LV_COORD_MAX, LV_ANIM_OFF);
-}

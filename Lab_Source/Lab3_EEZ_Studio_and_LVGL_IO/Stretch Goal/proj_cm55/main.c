@@ -7,39 +7,39 @@
 * Related Document : See README.md
 *
 ********************************************************************************
- * (c) 2025, Infineon Technologies AG, or an affiliate of Infineon
- * Technologies AG. All rights reserved.
- * This software, associated documentation and materials ("Software") is
- * owned by Infineon Technologies AG or one of its affiliates ("Infineon")
- * and is protected by and subject to worldwide patent protection, worldwide
- * copyright laws, and international treaty provisions. Therefore, you may use
- * this Software only as provided in the license agreement accompanying the
- * software package from which you obtained this Software. If no license
- * agreement applies, then any use, reproduction, modification, translation, or
- * compilation of this Software is prohibited without the express written
- * permission of Infineon.
- *
- * Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
- * IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
- * INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
- * THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
- * SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
- * Infineon reserves the right to make changes to the Software without notice.
- * You are responsible for properly designing, programming, and testing the
- * functionality and safety of your intended application of the Software, as
- * well as complying with any legal requirements related to its use. Infineon
- * does not guarantee that the Software will be free from intrusion, data theft
- * or loss, or other breaches ("Security Breaches"), and Infineon shall have
- * no liability arising out of any Security Breaches. Unless otherwise
- * explicitly approved by Infineon, the Software may not be used in any
- * application where a failure of the Product or any consequences of the use
- * thereof can reasonably be expected to result in personal injury.
+* (c) 2025-2026, Infineon Technologies AG, or an affiliate of Infineon
+* Technologies AG. All rights reserved.
+* This software, associated documentation and materials ("Software") is
+* owned by Infineon Technologies AG or one of its affiliates ("Infineon")
+* and is protected by and subject to worldwide patent protection, worldwide
+* copyright laws, and international treaty provisions. Therefore, you may use
+* this Software only as provided in the license agreement accompanying the
+* software package from which you obtained this Software. If no license
+* agreement applies, then any use, reproduction, modification, translation, or
+* compilation of this Software is prohibited without the express written
+* permission of Infineon.
+*
+* Disclaimer: UNLESS OTHERWISE EXPRESSLY AGREED WITH INFINEON, THIS SOFTWARE
+* IS PROVIDED AS-IS, WITH NO WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+* INCLUDING, BUT NOT LIMITED TO, ALL WARRANTIES OF NON-INFRINGEMENT OF
+* THIRD-PARTY RIGHTS AND IMPLIED WARRANTIES SUCH AS WARRANTIES OF FITNESS FOR A
+* SPECIFIC USE/PURPOSE OR MERCHANTABILITY.
+* Infineon reserves the right to make changes to the Software without notice.
+* You are responsible for properly designing, programming, and testing the
+* functionality and safety of your intended application of the Software, as
+* well as complying with any legal requirements related to its use. Infineon
+* does not guarantee that the Software will be free from intrusion, data theft
+* or loss, or other breaches ("Security Breaches"), and Infineon shall have
+* no liability arising out of any Security Breaches. Unless otherwise
+* explicitly approved by Infineon, the Software may not be used in any
+* application where a failure of the Product or any consequences of the use
+* thereof can reasonably be expected to result in personal injury.
 *******************************************************************************/
 
 /*******************************************************************************
 * Header Files
 *******************************************************************************/
-#include "ui.h"
+#include "cycfg_peripherals.h"
 #include "retarget_io_init.h"
 #include "vg_lite.h"
 #include "vg_lite_platform.h"
@@ -64,6 +64,8 @@
 #include "lv_port_indev.h"
 #include "demos/lv_demos.h"
 #include "display_i2c_config.h"
+
+#include "ui.h"
 #include "output_actions.h"
 
 /*******************************************************************************
@@ -103,10 +105,16 @@
 /* Define the LPTimer interrupt priority number. '1' implies highest priority.*/
 #define APP_LPTIMER_INTERRUPT_PRIORITY      (1U)
 
+#if LV_USE_DEMO_BENCHMARK
+#define BENCHMARK_DONE_CHECK_PERIOD_MS      (500U)
+#endif
+
 #if ( configGENERATE_RUN_TIME_STATS == 1 )
 #define TCPWM_TIMER_INT_PRIORITY            (1U)
 #endif
 
+#define SAR_ADC_INDEX	(0)
+#define SAR_ADC_CHANNEL (0)
 
 /*******************************************************************************
 * Global Variables
@@ -415,6 +423,46 @@ static void disp_touch_i2c_controller_interrupt(void)
 }
 
 
+#if LV_USE_DEMO_BENCHMARK
+/*******************************************************************************
+* Function Name: check_benchmark_done_cb
+********************************************************************************
+* Summary:
+*  This timer callback polls for the completion of the LVGL benchmark.
+*
+*  Once all test cases finish, the benchmark demo replaces the screen content
+*  with a results table. When the table is detected as the first child of the
+*  active screen, the callback re-enables touch input (which was disabled
+*  during the benchmark to reduce CPU load) and deletes the one-shot timer.
+*
+*  Touch input is intentionally disabled while the benchmark is running
+*  because the hardware touch controller operates in polling mode, which
+*  would add unnecessary CPU overhead.
+*
+* Parameters:
+*  lv_timer_t *t: Pointer to the LVGL timer that triggered this callback
+*
+* Return:
+*  void
+*
+*******************************************************************************/
+static void check_benchmark_done_cb(lv_timer_t *t)
+{
+    lv_obj_t *scr = lv_screen_active();
+
+    /* The benchmark summary screen places a table as the first child of the
+     * active screen once all test cases have completed. */
+    if ((lv_obj_get_child_count(scr) > 0) &&
+        (lv_obj_check_type(lv_obj_get_child(scr, 0), &lv_table_class)))
+    {
+        /* Benchmark is done - re-enable touch so the user can scroll results */
+        lv_port_indev_init();
+        lv_timer_delete(t);
+    }
+}
+#endif
+
+
 /*******************************************************************************
 * Function Name: cm55_gfx_task
 ********************************************************************************
@@ -608,21 +656,35 @@ static void cm55_gfx_task(void *arg)
         /* Initialize the memory and data structures needed for VGLite draw/blit
          * functions
          */
-        vglite_status = vg_lite_init((MY_DISP_HOR_RES) / 4,
-                             (MY_DISP_VER_RES) / 4);
+        vglite_status = vg_lite_init((MY_DISP_HOR_RES),
+                             (MY_DISP_VER_RES));
 
         if (VG_LITE_SUCCESS == vglite_status)
         {
             /* Initialize LVGL library */
             lv_init();
             lv_port_disp_init();
+
+#if LV_USE_DEMO_BENCHMARK
+            /* Run the Benchmark demo */
+            lv_demo_benchmark();
+
+            /* Poll for the benchmark summary table
+             * Once detected, touch input is re-enabled and
+             * this timer is deleted. */
+            lv_timer_create(check_benchmark_done_cb, BENCHMARK_DONE_CHECK_PERIOD_MS, NULL);
+#else
+            /* Initialize touch input. Skipped during benchmark to avoid the
+             * CPU overhead of polling-mode touch. */
             lv_port_indev_init();
 
             /* Run the Music demo */
-            //lv_demo_music();
-    /* Run the custom UI */
-    ui_init();
+            //lv_demo_music(); <-- This runs the default LVGL demo
 
+		    /* Run the custom UI */
+		    ui_init();
+
+#endif
         }
         else
         {
@@ -638,31 +700,30 @@ static void cm55_gfx_task(void *arg)
         printf("Graphics subsystem init failed, status: %d\r\n", gfx_status);
         handle_app_error();
     }
-		ui_textarea_printf("This is a test line 1");
-	    ui_textarea_printf("This is a test line 2");
-		ui_textarea_printf("This is a test line 3");
-		ui_textarea_printf("This is a test line 4");
-	    ui_textarea_printf("This is a test line 4");
-		ui_textarea_printf("This is a test line 5");
-		ui_textarea_printf("This is a test line 6");
-	    ui_textarea_printf("This is a test line 7");
-		ui_textarea_printf("This is a test line 8");
- int32_t sar_adc_count;
-    for (;;)
-    {
-        /* LVGL's timer handler function, to be called periodically to handle
-         * LVGL tasks.
-         */
-        time_till_next = lv_timer_handler();
-        vTaskDelay(pdMS_TO_TICKS(time_till_next));
-	    ui_tick(); /* Call UI tick to handle events */
-		/*Read ADC and set bar*/
-		sar_adc_count = Cy_AutAnalog_SAR_ReadResult(0,
-                                                  CY_AUTANALOG_SAR_INPUT_GPIO,
-                                                  0);
-	int percent=ui_set_bar_from_adc(sar_adc_count, 4095);
-	//Use the percent value returned from the previous function to set the display brightness
-	mtb_disp_waveshare_4p3_set_brightness( DISPLAY_I2C_CONTROLLER_HW, &disp_touch_i2c_controller_context,percent);
+	ui_textarea_printf("This is a test line 1");
+    ui_textarea_printf("This is a test line 2");
+	ui_textarea_printf("This is a test line 3");
+	ui_textarea_printf("This is a test line 4");
+    ui_textarea_printf("This is a test line 4");
+	ui_textarea_printf("This is a test line 5");
+	ui_textarea_printf("This is a test line 6");
+    ui_textarea_printf("This is a test line 7");
+	ui_textarea_printf("This is a test line 8");
+	int32_t sar_adc_count;
+	for (;;)
+	{
+	    /* LVGL's timer handler function, to be called periodically to handle
+	     * LVGL tasks.
+	     */
+	    time_till_next = lv_timer_handler();
+	    vTaskDelay(pdMS_TO_TICKS(time_till_next));
+		ui_tick(); /* Call UI tick to handle events */
+		/* Read ADC result */
+	    sar_adc_count = Cy_AutAnalog_SAR_ReadResult(SAR_ADC_INDEX,
+	                    CY_AUTANALOG_SAR_INPUT_GPIO,SAR_ADC_CHANNEL);
+	    int percent=ui_set_bar_from_adc(sar_adc_count, 4095);
+		//Use the percent value returned from the previous function to set the display brightness
+		mtb_disp_waveshare_4p3_set_brightness( DISPLAY_I2C_CONTROLLER_HW, &disp_touch_i2c_controller_context,percent);
     }
 }
 
@@ -729,26 +790,27 @@ int main(void)
     /* Initialize retarget-io middleware */
     init_retarget_io();
 
-    /* Enable global interrupts */
-    __enable_irq();
+	/* Enable global interrupts */
+	__enable_irq();
+	
+	/* Initialize SAR ADC */
+	result = Cy_AutAnalog_Init(&autonomous_analog_init);
+	if (CY_AUTANALOG_SUCCESS != result)
+	{
+	    handle_app_error();
+	}
+	
+	/* Set interrupt mask to enable SAR0 result interrupt */
+	Cy_AutAnalog_SetInterruptMask(CY_AUTANALOG_INT_SAR0_RESULT);
+	
+	/* Start autonomous control of the ADC */
+	Cy_AutAnalog_StartAutonomousControl();
+	
+	/* Inform user about potentiometer connection */
+	printf("ADC is configured in single channel configuration\r\n");
+	printf("Provide the input voltage reading at pin P15_1,  \r\n");
+	printf("which is connected to a potentiometer (POT)    \r\n\n");
 
-/* Initialize SAR ADC */
-    result = Cy_AutAnalog_Init(&autonomous_analog_init);
- if (CY_AUTANALOG_SUCCESS != result)
-    {
-        handle_app_error();
-    }
-
-    /* Set interrupt mask to enable SAR0 result interrupt */
-    Cy_AutAnalog_SetInterruptMask(CY_AUTANALOG_INT_SAR0_RESULT);
-
-    /* Start autonomous control of the ADC */
-    Cy_AutAnalog_StartAutonomousControl();
-
-    /* Inform user about potentiometer connection */
-    printf("ADC is configured in single channel configuration\r\n");
-    printf("Provide the input voltage reading at pin P15_1,  \r\n");
-    printf("which is connected to a potentiometer (POT)    \r\n\n");
 
     /* Create the FreeRTOS Task */
     task_return = xTaskCreate(cm55_gfx_task, GFX_TASK_NAME,
