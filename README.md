@@ -50,7 +50,7 @@ measurable FPS improvements in real-time UI applications.
 - Learn practical techniques to benchmark and improve UI performance using GPU acceleration.
 
 ## Content
-- Training video at Infineon Academy (coming soon)
+- [Training video at Infineon Academy](https://infineon-academy.csod.com/ui/lms-learning-details/app/video/25fdb041-2f16-46d1-afeb-9b5c138d9470)
 - [Presentation](./Presentation/PSE_advanced_graphics.pdf)
 - [Training manual](./Manual/PSE_advanced_graphics_training_manual.pdf)
 - [Lab solutions](./Lab_Source/)
